@@ -1,0 +1,32 @@
+package com.datn.trip_service.model;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Trip {
+
+    private String id;
+    private String userId;
+    private String title;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
+    
+    @Builder.Default
+    private Boolean isPublic = false;
+    
+    private String coverPhoto;
+    private String content; // User's feelings/review about their trip
+    private String tags; // JSON array: ["food", "beach", "adventure"] for categorization
+    private List<Plan> plans;
+    private LocalDateTime createdAt;
+}
