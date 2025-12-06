@@ -206,16 +206,29 @@ public class PlanService {
     public Plan updatePlan(String id, CreatePlanRequest request) {
         Plan plan = getPlanById(id);
         
-        plan.setTitle(request.getTitle());
-        plan.setAddress(request.getAddress());
-        plan.setLocation(request.getLocation());
+        if (request.getTitle() != null) {
+            plan.setTitle(request.getTitle());
+        }
+        if (request.getAddress() != null) {
+            plan.setAddress(request.getAddress());
+        }
+        if (request.getLocation() != null) {
+            plan.setLocation(request.getLocation());
+        }
         
         if (request.getStartTime() != null) {
             plan.setStartTime(LocalDateTime.parse(request.getStartTime(), formatter));
         }
 
-        plan.setExpense(request.getExpense());
-        plan.setPhotoUrl(request.getPhotoUrl());
+        if (request.getExpense() != null) {
+            plan.setExpense(request.getExpense());
+        }
+        if (request.getPhotoUrl() != null) {
+            plan.setPhotoUrl(request.getPhotoUrl());
+        }
+        if (request.getPhotos() != null) {
+            plan.setPhotos(request.getPhotos());
+        }
         
         if (request.getType() != null) {
             plan.setType(PlanType.valueOf(request.getType()));

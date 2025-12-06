@@ -120,6 +120,14 @@ public class PlanRepository {
         
         map.put("expense", plan.getExpense());
         map.put("photoUrl", plan.getPhotoUrl());
+        
+        // Add photos list - ensure it's not null
+        if (plan.getPhotos() != null && !plan.getPhotos().isEmpty()) {
+            map.put("photos", plan.getPhotos());
+        } else {
+            map.put("photos", new ArrayList<String>());
+        }
+        
         map.put("type", plan.getType() != null ? plan.getType().name() : null);
         
         if (plan.getCreatedAt() != null) {
@@ -273,6 +281,17 @@ public class PlanRepository {
         
         plan.setExpense(document.getDouble("expense"));
         plan.setPhotoUrl(document.getString("photoUrl"));
+        
+        // Parse photos list
+        Object photosObj = document.get("photos");
+        if (photosObj instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<String> photos = (List<String>) photosObj;
+            plan.setPhotos(photos);
+        } else {
+            plan.setPhotos(new ArrayList<>());
+        }
+        
         plan.setType(planType);
         
         String createdAtStr = document.getString("createdAt");
