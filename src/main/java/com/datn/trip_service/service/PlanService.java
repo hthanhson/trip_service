@@ -18,6 +18,9 @@ public class PlanService {
     @Autowired
     private PlanRepository planRepository;
     
+    @Autowired
+    private FileStorageService fileStorageService;
+    
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
 //    public Plan createPlan(CreatePlanRequest request) {
@@ -239,5 +242,24 @@ public class PlanService {
 
     public void deletePlan(String id) {
         planRepository.deleteById(id);
+    }
+    
+    public void deletePhotoFromPlan(String planId, String photoFileName) {
+        Plan plan = getPlanById(planId);
+        
+        if (plan.getPhotos() != null && plan.getPhotos().contains(photoFileName)) {
+            plan.getPhotos().remove(photoFileName);
+            planRepository.save(plan);
+            
+            // Delete photo file from storage
+            try {
+                fileStorageService.deleteFile(photoFileName);
+            } catch (Exception e) {
+                // Log error but photo is already removed from plan
+                System.err.println("Failed to delete photo file: " + e.getMessage());
+            }
+        } else {
+            throw new RuntimeException("Photo not found in plan: " + photoFileName);
+        }
     }
 }

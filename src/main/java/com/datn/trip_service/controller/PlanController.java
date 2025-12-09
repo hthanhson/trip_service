@@ -100,4 +100,13 @@ public class PlanController {
         planService.deletePlan(planId);
         return ResponseEntity.noContent().build();
     }
+    
+    @DeleteMapping("/{planId}/photos/{photoFileName}")
+    public ResponseEntity<Void> deletePhotoFromPlan(
+            @PathVariable String tripId,
+            @PathVariable String planId,
+            @PathVariable String photoFileName) {
+        planService.deletePhotoFromPlan(planId, photoFileName);
+        return ResponseEntity.noContent().build();
+    }
 }
