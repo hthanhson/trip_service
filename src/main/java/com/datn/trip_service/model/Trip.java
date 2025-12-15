@@ -22,11 +22,12 @@ public class Trip {
     private LocalDate endDate;
     
     @Builder.Default
-    private Boolean isPublic = false;
+    private String isPublic = "none"; // Values: "none", "public", "follower"
     
     private String coverPhoto;
     private String content; // User's feelings/review about their trip
     private String tags; // JSON array: ["food", "beach", "adventure"] for categorization
     private List<Plan> plans;
     private LocalDateTime createdAt;
+    private LocalDateTime sharedAt; // Timestamp when trip was first shared
 }

@@ -23,7 +23,7 @@ public class TripService {
         trip.setTitle(request.getTitle());
         trip.setStartDate(request.getStartDate());
         trip.setEndDate(request.getEndDate());
-        trip.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : false);
+        trip.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : null);
         trip.setCoverPhoto(request.getCoverPhoto());
         trip.setContent(request.getContent());
         trip.setTags(request.getTags());
@@ -64,6 +64,12 @@ public class TripService {
         trip.setCoverPhoto(request.getCoverPhoto());
         trip.setContent(request.getContent());
         trip.setTags(request.getTags());
+        
+        // Only set sharedAt if it's the first time sharing (trip doesn't have sharedAt yet)
+        if (trip.getSharedAt() == null && request.getSharedAt() != null) {
+            trip.setSharedAt(request.getSharedAt());
+        }
+        // Keep existing sharedAt if already set, don't update it
         
         return tripRepository.save(trip);
     }

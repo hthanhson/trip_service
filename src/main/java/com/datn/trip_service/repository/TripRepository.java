@@ -1,5 +1,7 @@
 package com.datn.trip_service.repository;
 
+import com.datn.trip_service.model.Plan;
+import com.datn.trip_service.model.PlanType;
 import com.datn.trip_service.model.Trip;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
@@ -59,11 +61,12 @@ public class TripRepository {
         map.put("title", trip.getTitle());
         map.put("startDate", trip.getStartDate() != null ? trip.getStartDate().toString() : null);
         map.put("endDate", trip.getEndDate() != null ? trip.getEndDate().toString() : null);
-        map.put("isPublic", trip.getIsPublic() != null ? trip.getIsPublic() : false);
+        map.put("isPublic", trip.getIsPublic() != null ? trip.getIsPublic() : "none");
         map.put("coverPhoto", trip.getCoverPhoto());
         map.put("content", trip.getContent());
         map.put("tags", trip.getTags());
         map.put("createdAt", trip.getCreatedAt() != null ? trip.getCreatedAt().toString() : null);
+        map.put("sharedAt", trip.getSharedAt() != null ? trip.getSharedAt().toString() : null);
         return map;
     }
 
@@ -100,7 +103,7 @@ public class TripRepository {
             trip.setEndDate(LocalDate.parse(endDateStr));
         }
         
-        trip.setIsPublic(document.getBoolean("isPublic"));
+        trip.setIsPublic(document.getString("isPublic"));
         trip.setCoverPhoto(document.getString("coverPhoto"));
         trip.setContent(document.getString("content"));
         trip.setTags(document.getString("tags"));
@@ -110,7 +113,89 @@ public class TripRepository {
             trip.setCreatedAt(LocalDateTime.parse(createdAtStr));
         }
         
+        String sharedAtStr = document.getString("sharedAt");
+        if (sharedAtStr != null) {
+            trip.setSharedAt(LocalDateTime.parse(sharedAtStr));
+        }
+        
+        // Load plans from separate collection
+        try {
+            Firestore firestore = getFirestore();
+            QuerySnapshot plansSnapshot = firestore.collection("plans")
+                    .whereEqualTo("tripId", document.getId())
+                    .get()
+                    .get();
+            
+            List<Plan> plans = new ArrayList<>();
+            System.out.println("Loading plans for trip: " + document.getId() + ", found " + plansSnapshot.size() + " plans");
+            
+            for (DocumentSnapshot planDoc : plansSnapshot.getDocuments()) {
+                System.out.println("Plan doc ID: " + planDoc.getId() + ", data: " + planDoc.getData());
+                Plan plan = convertDocumentToPlan(planDoc);
+                if (plan != null) {
+                    plans.add(plan);
+                }
+            }
+            trip.setPlans(plans);
+        } catch (Exception e) {
+            // If loading plans fails, set empty list
+            System.err.println("Failed to load plans for trip " + document.getId() + ": " + e.getMessage());
+            e.printStackTrace();
+            trip.setPlans(new ArrayList<>());
+        }
+        
         return trip;
+    }
+    
+    private Plan convertDocumentToPlan(DocumentSnapshot document) {
+        Plan plan = new Plan();
+        plan.setId(document.getId());
+        plan.setTitle(document.getString("title"));
+        plan.setAddress(document.getString("address"));
+        plan.setLocation(document.getString("location"));
+        
+        // Parse startTime
+        String startTimeStr = document.getString("startTime");
+        if (startTimeStr != null) {
+            try {
+                plan.setStartTime(LocalDateTime.parse(startTimeStr));
+            } catch (Exception e) {
+                // If parsing fails, skip setting startTime
+            }
+        }
+        
+        plan.setExpense(document.getDouble("expense"));
+        plan.setPhotoUrl(document.getString("photoUrl"));
+        
+        // Load photos list
+        Object photosObj = document.get("photos");
+        if (photosObj instanceof List) {
+            plan.setPhotos((List<String>) photosObj);
+        } else {
+            plan.setPhotos(new ArrayList<>());
+        }
+        
+        // Parse type
+        String typeStr = document.getString("type");
+        if (typeStr != null) {
+            try {
+                plan.setType(PlanType.valueOf(typeStr));
+            } catch (Exception e) {
+                // If parsing fails, set to null
+            }
+        }
+        
+        // Parse createdAt
+        String createdAtStr = document.getString("createdAt");
+        if (createdAtStr != null) {
+            try {
+                plan.setCreatedAt(LocalDateTime.parse(createdAtStr));
+            } catch (Exception e) {
+                // If parsing fails, skip setting createdAt
+            }
+        }
+        
+        return plan;
     }
 
     public List<Trip> findByUserId(String userId) {
