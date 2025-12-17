@@ -3,12 +3,14 @@ package com.datn.trip_service.repository;
 import com.datn.trip_service.model.Plan;
 import com.datn.trip_service.model.PlanType;
 import com.datn.trip_service.model.Trip;
+import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +25,23 @@ public class TripRepository {
 
     private Firestore getFirestore() {
         return FirestoreClient.getFirestore();
+    }
+    
+    // Helper method to parse LocalDateTime from Firestore (handles both Timestamp and String)
+    private LocalDateTime parseLocalDateTime(Object value) {
+        if (value == null) return null;
+        
+        if (value instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) value;
+            return LocalDateTime.ofInstant(timestamp.toDate().toInstant(), ZoneId.systemDefault());
+        } else if (value instanceof String) {
+            try {
+                return LocalDateTime.parse((String) value);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     public Trip save(Trip trip) {
@@ -108,15 +127,9 @@ public class TripRepository {
         trip.setContent(document.getString("content"));
         trip.setTags(document.getString("tags"));
         
-        String createdAtStr = document.getString("createdAt");
-        if (createdAtStr != null) {
-            trip.setCreatedAt(LocalDateTime.parse(createdAtStr));
-        }
-        
-        String sharedAtStr = document.getString("sharedAt");
-        if (sharedAtStr != null) {
-            trip.setSharedAt(LocalDateTime.parse(sharedAtStr));
-        }
+        // Parse datetime fields using helper (handles both Timestamp and String)
+        trip.setCreatedAt(parseLocalDateTime(document.get("createdAt")));
+        trip.setSharedAt(parseLocalDateTime(document.get("sharedAt")));
         
         // Load plans from separate collection
         try {
@@ -154,15 +167,8 @@ public class TripRepository {
         plan.setAddress(document.getString("address"));
         plan.setLocation(document.getString("location"));
         
-        // Parse startTime
-        String startTimeStr = document.getString("startTime");
-        if (startTimeStr != null) {
-            try {
-                plan.setStartTime(LocalDateTime.parse(startTimeStr));
-            } catch (Exception e) {
-                // If parsing fails, skip setting startTime
-            }
-        }
+        // Parse startTime using helper
+        plan.setStartTime(parseLocalDateTime(document.get("startTime")));
         
         plan.setExpense(document.getDouble("expense"));
         plan.setPhotoUrl(document.getString("photoUrl"));
@@ -185,15 +191,8 @@ public class TripRepository {
             }
         }
         
-        // Parse createdAt
-        String createdAtStr = document.getString("createdAt");
-        if (createdAtStr != null) {
-            try {
-                plan.setCreatedAt(LocalDateTime.parse(createdAtStr));
-            } catch (Exception e) {
-                // If parsing fails, skip setting createdAt
-            }
-        }
+        // Parse createdAt using helper
+        plan.setCreatedAt(parseLocalDateTime(document.get("createdAt")));
         
         return plan;
     }

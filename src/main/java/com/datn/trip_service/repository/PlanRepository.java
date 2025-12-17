@@ -3,11 +3,13 @@ package com.datn.trip_service.repository;
 import com.datn.trip_service.model.Plan;
 import com.datn.trip_service.model.PlanType;
 import com.datn.trip_service.model.plan.*;
+import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -20,6 +22,23 @@ public class PlanRepository {
     
     private Firestore getFirestore() {
         return FirestoreClient.getFirestore();
+    }
+    
+    // Helper method to parse LocalDateTime from Firestore (handles both Timestamp and String)
+    private LocalDateTime parseLocalDateTime(Object value) {
+        if (value == null) return null;
+        
+        if (value instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) value;
+            return LocalDateTime.ofInstant(timestamp.toDate().toInstant(), ZoneId.systemDefault());
+        } else if (value instanceof String) {
+            try {
+                return LocalDateTime.parse((String) value, formatter);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
     }
     
     public Plan save(Plan plan) {
@@ -197,65 +216,44 @@ public class PlanRepository {
                     FlightPlan fp = new FlightPlan();
                     fp.setArrivalLocation(document.getString("arrivalLocation"));
                     fp.setArrivalAddress(document.getString("arrivalAddress"));
-                    String arrivalDateStr = document.getString("arrivalDate");
-                    if (arrivalDateStr != null) {
-                        fp.setArrivalDate(LocalDateTime.parse(arrivalDateStr, formatter));
-                    }
+                    fp.setArrivalDate(parseLocalDateTime(document.get("arrivalDate")));
                     plan = fp;
                     break;
                 case RESTAURANT:
                     RestaurantPlan rp = new RestaurantPlan();
-                    String reservationDateStr = document.getString("reservationDate");
-                    if (reservationDateStr != null) {
-                        rp.setReservationDate(LocalDateTime.parse(reservationDateStr, formatter));
-                    }
-                    String reservationTimeStr = document.getString("reservationTime");
-                    if (reservationTimeStr != null) {
-                        rp.setReservationTime(LocalDateTime.parse(reservationTimeStr, formatter));
-                    }
+                    rp.setReservationDate(parseLocalDateTime(document.get("reservationDate")));
+                    rp.setReservationTime(parseLocalDateTime(document.get("reservationTime")));
                     plan = rp;
                     break;
                 case LODGING:
                     LodgingPlan lp = new LodgingPlan();
-                    String checkInDateStr = document.getString("checkInDate");
-                    if (checkInDateStr != null) {
-                        lp.setCheckInDate(LocalDateTime.parse(checkInDateStr, formatter));
-                    }
-                    String checkOutDateStr = document.getString("checkOutDate");
-                    if (checkOutDateStr != null) {
-                        lp.setCheckOutDate(LocalDateTime.parse(checkOutDateStr, formatter));
-                    }
+                    lp.setCheckInDate(parseLocalDateTime(document.get("checkInDate")));
+                    lp.setCheckOutDate(parseLocalDateTime(document.get("checkOutDate")));
                     lp.setPhone(document.getString("phone"));
                     plan = lp;
                     break;
                 case ACTIVITY:
+                case TOUR:
+                case THEATER:
+                case SHOPPING:
+                case CAMPING:
+                case RELIGION:
                     ActivityPlan ap = new ActivityPlan();
-                    String endTimeStr = document.getString("endTime");
-                    if (endTimeStr != null) {
-                        ap.setEndTime(LocalDateTime.parse(endTimeStr, formatter));
-                    }
+                    ap.setEndTime(parseLocalDateTime(document.get("endTime")));
                     plan = ap;
                     break;
                 case BOAT:
                     BoatPlan bp = new BoatPlan();
-                    String arrivalTimeStr = document.getString("arrivalTime");
-                    if (arrivalTimeStr != null) {
-                        bp.setArrivalTime(LocalDateTime.parse(arrivalTimeStr, formatter));
-                    }
+                    bp.setArrivalTime(parseLocalDateTime(document.get("arrivalTime")));
                     bp.setArrivalLocation(document.getString("arrivalLocation"));
                     bp.setArrivalAddress(document.getString("arrivalAddress"));
                     plan = bp;
                     break;
                 case CAR_RENTAL:
+                case TRAIN:
                     CarRentalPlan cp = new CarRentalPlan();
-                    String pickupDateStr = document.getString("pickupDate");
-                    if (pickupDateStr != null) {
-                        cp.setPickupDate(LocalDateTime.parse(pickupDateStr, formatter));
-                    }
-                    String pickupTimeStr = document.getString("pickupTime");
-                    if (pickupTimeStr != null) {
-                        cp.setPickupTime(LocalDateTime.parse(pickupTimeStr, formatter));
-                    }
+                    cp.setPickupDate(parseLocalDateTime(document.get("pickupDate")));
+                    cp.setPickupTime(parseLocalDateTime(document.get("pickupTime")));
                     cp.setPhone(document.getString("phone"));
                     plan = cp;
                     break;
@@ -273,11 +271,8 @@ public class PlanRepository {
         plan.setAddress(document.getString("address"));
         plan.setLocation(document.getString("location"));
         
-        // Parse LocalDateTime from String
-        String startTimeStr = document.getString("startTime");
-        if (startTimeStr != null) {
-            plan.setStartTime(LocalDateTime.parse(startTimeStr, formatter));
-        }
+        // Parse LocalDateTime from Firestore (handles both Timestamp and String)
+        plan.setStartTime(parseLocalDateTime(document.get("startTime")));
         
         plan.setExpense(document.getDouble("expense"));
         plan.setPhotoUrl(document.getString("photoUrl"));
@@ -294,10 +289,7 @@ public class PlanRepository {
         
         plan.setType(planType);
         
-        String createdAtStr = document.getString("createdAt");
-        if (createdAtStr != null) {
-            plan.setCreatedAt(LocalDateTime.parse(createdAtStr, formatter));
-        }
+        plan.setCreatedAt(parseLocalDateTime(document.get("createdAt")));
         
         return plan;
     }

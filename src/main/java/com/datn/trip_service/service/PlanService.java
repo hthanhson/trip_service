@@ -140,7 +140,12 @@ public class PlanService {
         
         plan.setExpense(request.getExpense());
         plan.setPhotoUrl(request.getPhotoUrl());
-        plan.setType(PlanType.ACTIVITY);
+        // Use type from request if provided, otherwise default to ACTIVITY
+        if (request.getType() != null && !request.getType().isEmpty()) {
+            plan.setType(PlanType.valueOf(request.getType()));
+        } else {
+            plan.setType(PlanType.ACTIVITY);
+        }
         
         return planRepository.save(plan);
     }
@@ -183,7 +188,12 @@ public class PlanService {
         
         plan.setExpense(request.getExpense());
         plan.setPhotoUrl(request.getPhotoUrl());
-        plan.setType(PlanType.CAR_RENTAL);
+        // Use type from request if provided, otherwise default to CAR_RENTAL
+        if (request.getType() != null && !request.getType().isEmpty()) {
+            plan.setType(PlanType.valueOf(request.getType()));
+        } else {
+            plan.setType(PlanType.CAR_RENTAL);
+        }
         
         // CarRental-specific fields
         if (request.getPickupDate() != null) {
