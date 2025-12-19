@@ -233,4 +233,108 @@ public class TripRepository {
             throw new RuntimeException("Failed to delete trip", e);
         }
     }
+
+    public List<Trip> findTripsStartingOnDate(LocalDate date) {
+        try {
+            Firestore firestore = getFirestore();
+            
+            // Convert LocalDate to String for Firestore query
+            String dateString = date.toString();
+            
+            QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME)
+                    .whereEqualTo("startDate", dateString)
+                    .get()
+                    .get();
+            
+            List<Trip> trips = new ArrayList<>();
+            for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                Trip trip = convertDocumentToTrip(document);
+                if (trip != null) {
+                    trips.add(trip);
+                }
+            }
+            
+            System.out.println("Found " + trips.size() + " trip(s) starting on " + dateString);
+            return trips;
+            
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to find trips by start date", e);
+        }
+    }
+
+    /**
+     * Find all active trips (trips that are currently ongoing)
+     * Active = startDate <= today <= endDate
+     */
+    public List<Trip> findActiveTrips(LocalDate today) {
+        try {
+            Firestore firestore = getFirestore();
+            
+            // Get all trips and filter in memory (Firestore doesn't support range queries on different fields easily)
+            QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME)
+                    .get()
+                    .get();
+            
+            List<Trip> activeTrips = new ArrayList<>();
+            String todayString = today.toString();
+            
+            for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                String startDateStr = document.getString("startDate");
+                String endDateStr = document.getString("endDate");
+                
+                if (startDateStr != null && endDateStr != null) {
+                    // Check if today is between start and end date
+                    if (startDateStr.compareTo(todayString) <= 0 && endDateStr.compareTo(todayString) >= 0) {
+                        Trip trip = convertDocumentToTrip(document);
+                        if (trip != null) {
+                            activeTrips.add(trip);
+                        }
+                    }
+                }
+            }
+            
+            System.out.println("Found " + activeTrips.size() + " active trip(s) on " + todayString);
+            return activeTrips;
+            
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to find active trips", e);
+        }
+    }
+
+    /**
+     * Find upcoming trips (trips that will start in the future)
+     * Upcoming = startDate > today
+     * Sorted by startDate ascending (nearest first)
+     */
+    public List<Trip> findUpcomingTrips(LocalDate today) {
+        try {
+            Firestore firestore = getFirestore();
+            
+            String todayString = today.toString();
+            
+            // Query trips with startDate > today
+            QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME)
+                    .whereGreaterThan("startDate", todayString)
+                    .get()
+                    .get();
+            
+            List<Trip> upcomingTrips = new ArrayList<>();
+            for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                Trip trip = convertDocumentToTrip(document);
+                if (trip != null) {
+                    upcomingTrips.add(trip);
+                }
+            }
+            
+            // Sort by startDate ascending (nearest first)
+            upcomingTrips.sort((t1, t2) -> t1.getStartDate().compareTo(t2.getStartDate()));
+            
+            System.out.println("Found " + upcomingTrips.size() + " upcoming trip(s) after " + todayString);
+            return upcomingTrips;
+            
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to find upcoming trips", e);
+        }
+    }
+
 }

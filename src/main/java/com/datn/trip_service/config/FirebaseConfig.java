@@ -27,14 +27,14 @@ public class FirebaseConfig {
                         .build();
 
                 FirebaseApp.initializeApp(options);
-                System.out.println("✅ Firebase initialized successfully!");
-                System.out.println("📦 Project: apptravel-addd6");
-                System.out.println("🗄️ Database: https://apptravel-addd6-default-rtdb.firebaseio.com");
+                System.out.println(" Firebase initialized successfully!");
+                System.out.println("Project: apptravel-addd6");
+                System.out.println("Database: https://apptravel-addd6-default-rtdb.firebaseio.com");
             }
         } catch (IOException e) {
-            System.err.println("⚠️ Warning: Firebase initialization failed - " + e.getMessage());
-            System.err.println("📝 Service will continue without Firebase integration.");
-            System.err.println("💡 To enable Firebase:");
+            System.err.println(" Warning: Firebase initialization failed - " + e.getMessage());
+            System.err.println(" Service will continue without Firebase integration.");
+            System.err.println(" To enable Firebase:");
             System.err.println("   1. Download service account key from Firebase Console");
             System.err.println("   2. Place it at: src/main/resources/firebase-service-account.json");
         }
