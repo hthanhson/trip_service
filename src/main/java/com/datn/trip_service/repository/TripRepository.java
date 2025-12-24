@@ -7,7 +7,7 @@ import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.stereotype.Repository;
-
+import com.datn.trip_service.model.User;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -99,7 +99,7 @@ public class TripRepository {
                 memberMap.put("email", member.getEmail());
                 memberMap.put("profilePicture", member.getProfilePicture());
                 memberMap.put("role", member.getRole());
-                memberMap.put("-enabled", member.getEnabled());
+                memberMap.put("enabled", member.getEnabled());
                 membersList.add(memberMap);
             }
             map.put("members", membersList);
@@ -121,7 +121,7 @@ public class TripRepository {
     }
     
     // Helper method to convert User to Map
-    private Map<String, Object> convertUserToMap(com.datn.trip_service.model.User user) {
+    private Map<String, Object> convertUserToMap(User user) {
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("id", user.getId());
         userMap.put("firstName", user.getFirstName());
@@ -179,9 +179,9 @@ public class TripRepository {
         try {
             List<Map<String, Object>> membersList = (List<Map<String, Object>>) document.get("members");
             if (membersList != null && !membersList.isEmpty()) {
-                List<com.datn.trip_service.model.User> members = new ArrayList<>();
+                List<User> members = new ArrayList<>();
                 for (Map<String, Object> memberMap : membersList) {
-                    com.datn.trip_service.model.User member = com.datn.trip_service.model.User.builder()
+                    User member = User.builder()
                             .id((String) memberMap.get("id"))
                             .firstName((String) memberMap.get("firstName"))
                             .lastName((String) memberMap.get("lastName"))
@@ -205,9 +205,9 @@ public class TripRepository {
         try {
             List<Map<String, Object>> sharedUsersList = (List<Map<String, Object>>) document.get("sharedWithUsers");
             if (sharedUsersList != null && !sharedUsersList.isEmpty()) {
-                List<com.datn.trip_service.model.User> sharedUsers = new ArrayList<>();
+                List<User> sharedUsers = new ArrayList<>();
                 for (Map<String, Object> userMap : sharedUsersList) {
-                    com.datn.trip_service.model.User user = com.datn.trip_service.model.User.builder()
+                    User user = User.builder()
                             .id((String) userMap.get("id"))
                             .firstName((String) userMap.get("firstName"))
                             .lastName((String) userMap.get("lastName"))
