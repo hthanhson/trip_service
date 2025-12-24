@@ -21,6 +21,9 @@ public class PlanService {
     @Autowired
     private FileStorageService fileStorageService;
     
+    @Autowired
+    private TripService tripService;
+    
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
 //    public Plan createPlan(CreatePlanRequest request) {
@@ -271,5 +274,55 @@ public class PlanService {
         } else {
             throw new RuntimeException("Photo not found in plan: " + photoFileName);
         }
+    }
+    
+    // Helper method to verify if user can manage plans in a trip
+    public void verifyMemberAccess(String tripId, String userId) {
+        if (!tripService.isMember(tripId, userId)) {
+            throw new RuntimeException("User is not authorized to manage plans for this trip");
+        }
+    }
+    
+    // Overloaded methods with userId parameter for authorization
+    public Plan createFlightPlanWithAuth(CreateFlightPlanRequest request, String userId) {
+        verifyMemberAccess(request.getTripId(), userId);
+        return createFlightPlan(request);
+    }
+    
+    public Plan createRestaurantPlanWithAuth(CreateRestaurantPlanRequest request, String userId) {
+        verifyMemberAccess(request.getTripId(), userId);
+        return createRestaurantPlan(request);
+    }
+    
+    public Plan createLodgingPlanWithAuth(CreateLodgingPlanRequest request, String userId) {
+        verifyMemberAccess(request.getTripId(), userId);
+        return createLodgingPlan(request);
+    }
+    
+    public Plan createActivityPlanWithAuth(CreateActivityPlanRequest request, String userId) {
+        verifyMemberAccess(request.getTripId(), userId);
+        return createActivityPlan(request);
+    }
+    
+    public Plan createBoatPlanWithAuth(CreateBoatPlanRequest request, String userId) {
+        verifyMemberAccess(request.getTripId(), userId);
+        return createBoatPlan(request);
+    }
+    
+    public Plan createCarRentalPlanWithAuth(CreateCarRentalPlanRequest request, String userId) {
+        verifyMemberAccess(request.getTripId(), userId);
+        return createCarRentalPlan(request);
+    }
+    
+    public Plan updatePlanWithAuth(String id, CreatePlanRequest request, String userId) {
+        Plan plan = getPlanById(id);
+        verifyMemberAccess(plan.getTripId(), userId);
+        return updatePlan(id, request);
+    }
+    
+    public void deletePlanWithAuth(String id, String userId) {
+        Plan plan = getPlanById(id);
+        verifyMemberAccess(plan.getTripId(), userId);
+        deletePlan(id);
     }
 }

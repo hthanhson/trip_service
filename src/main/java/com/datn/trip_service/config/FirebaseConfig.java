@@ -1,8 +1,11 @@
 package com.datn.trip_service.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.Firestore;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.cloud.FirestoreClient;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
@@ -38,5 +41,10 @@ public class FirebaseConfig {
             System.err.println("   1. Download service account key from Firebase Console");
             System.err.println("   2. Place it at: src/main/resources/firebase-service-account.json");
         }
+    }
+    
+    @Bean
+    public Firestore firestore() {
+        return FirestoreClient.getFirestore();
     }
 }

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 @Repository
 public class TripRepository {
@@ -86,7 +87,50 @@ public class TripRepository {
         map.put("tags", trip.getTags());
         map.put("createdAt", trip.getCreatedAt() != null ? trip.getCreatedAt().toString() : null);
         map.put("sharedAt", trip.getSharedAt() != null ? trip.getSharedAt().toString() : null);
+        
+        // Add members list
+        if (trip.getMembers() != null && !trip.getMembers().isEmpty()) {
+            List<Map<String, Object>> membersList = new ArrayList<>();
+            for (var member : trip.getMembers()) {
+                Map<String, Object> memberMap = new HashMap<>();
+                memberMap.put("id", member.getId());
+                memberMap.put("firstName", member.getFirstName());
+                memberMap.put("lastName", member.getLastName());
+                memberMap.put("email", member.getEmail());
+                memberMap.put("profilePicture", member.getProfilePicture());
+                memberMap.put("role", member.getRole());
+                memberMap.put("-enabled", member.getEnabled());
+                membersList.add(memberMap);
+            }
+            map.put("members", membersList);
+        } else {
+            map.put("members", new ArrayList<>());
+        }
+        
+        // Add sharedWithUsers list
+        if (trip.getSharedWithUsers() != null) {
+            List<Map<String, Object>> sharedUsersList = trip.getSharedWithUsers().stream()
+                    .map(this::convertUserToMap)
+                    .collect(Collectors.toList());
+            map.put("sharedWithUsers", sharedUsersList);
+        } else {
+            map.put("sharedWithUsers", new ArrayList<>());
+        }
+        
         return map;
+    }
+    
+    // Helper method to convert User to Map
+    private Map<String, Object> convertUserToMap(com.datn.trip_service.model.User user) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("firstName", user.getFirstName());
+        userMap.put("lastName", user.getLastName());
+        userMap.put("email", user.getEmail());
+        userMap.put("profilePicture", user.getProfilePicture());
+        userMap.put("role", user.getRole());
+        userMap.put("enabled", user.getEnabled());
+        return userMap;
     }
 
     public Optional<Trip> findById(String id) {
@@ -130,6 +174,58 @@ public class TripRepository {
         // Parse datetime fields using helper (handles both Timestamp and String)
         trip.setCreatedAt(parseLocalDateTime(document.get("createdAt")));
         trip.setSharedAt(parseLocalDateTime(document.get("sharedAt")));
+        
+        // Load members list
+        try {
+            List<Map<String, Object>> membersList = (List<Map<String, Object>>) document.get("members");
+            if (membersList != null && !membersList.isEmpty()) {
+                List<com.datn.trip_service.model.User> members = new ArrayList<>();
+                for (Map<String, Object> memberMap : membersList) {
+                    com.datn.trip_service.model.User member = com.datn.trip_service.model.User.builder()
+                            .id((String) memberMap.get("id"))
+                            .firstName((String) memberMap.get("firstName"))
+                            .lastName((String) memberMap.get("lastName"))
+                            .email((String) memberMap.get("email"))
+                            .profilePicture((String) memberMap.get("profilePicture"))
+                            .role((String) memberMap.get("role"))
+                            .enabled((Boolean) memberMap.get("enabled"))
+                            .build();
+                    members.add(member);
+                }
+                trip.setMembers(members);
+            } else {
+                trip.setMembers(new ArrayList<>());
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse members: " + e.getMessage());
+            trip.setMembers(new ArrayList<>());
+        }
+        
+        // Load sharedWithUsers list
+        try {
+            List<Map<String, Object>> sharedUsersList = (List<Map<String, Object>>) document.get("sharedWithUsers");
+            if (sharedUsersList != null && !sharedUsersList.isEmpty()) {
+                List<com.datn.trip_service.model.User> sharedUsers = new ArrayList<>();
+                for (Map<String, Object> userMap : sharedUsersList) {
+                    com.datn.trip_service.model.User user = com.datn.trip_service.model.User.builder()
+                            .id((String) userMap.get("id"))
+                            .firstName((String) userMap.get("firstName"))
+                            .lastName((String) userMap.get("lastName"))
+                            .email((String) userMap.get("email"))
+                            .profilePicture((String) userMap.get("profilePicture"))
+                            .role((String) userMap.get("role"))
+                            .enabled((Boolean) userMap.get("enabled"))
+                            .build();
+                    sharedUsers.add(user);
+                }
+                trip.setSharedWithUsers(sharedUsers);
+            } else {
+                trip.setSharedWithUsers(new ArrayList<>());
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse sharedWithUsers: " + e.getMessage());
+            trip.setSharedWithUsers(new ArrayList<>());
+        }
         
         // Load plans from separate collection
         try {

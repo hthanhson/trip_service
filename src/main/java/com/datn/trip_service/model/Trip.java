@@ -28,6 +28,8 @@ public class Trip {
     private String content; // User's feelings/review about their trip
     private String tags; // JSON array: ["food", "beach", "adventure"] for categorization
     private List<Plan> plans;
+    private List<User> members; // List of members who can participate and manage plans in the trip
+    private List<User> sharedWithUsers; // When isPublic="follower", share only with these users; empty = all followers
     private LocalDateTime createdAt;
     private LocalDateTime sharedAt; // Timestamp when trip was first shared
 }

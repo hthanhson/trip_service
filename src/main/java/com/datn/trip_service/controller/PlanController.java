@@ -22,55 +22,85 @@ public class PlanController {
     @PostMapping("/flight")
     public ResponseEntity<Plan> createFlightPlan(
             @PathVariable String tripId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestBody CreateFlightPlanRequest request) {
-        request.setTripId(tripId);
-        Plan createdPlan = planService.createFlightPlan(request);
-        return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        try {
+            request.setTripId(tripId);
+            Plan createdPlan = planService.createFlightPlanWithAuth(request, userId);
+            return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
     }
     
     @PostMapping("/restaurant")
     public ResponseEntity<Plan> createRestaurantPlan(
             @PathVariable String tripId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestBody CreateRestaurantPlanRequest request) {
-        request.setTripId(tripId);
-        Plan createdPlan = planService.createRestaurantPlan(request);
-        return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        try {
+            request.setTripId(tripId);
+            Plan createdPlan = planService.createRestaurantPlanWithAuth(request, userId);
+            return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
     }
     
     @PostMapping("/lodging")
     public ResponseEntity<Plan> createLodgingPlan(
             @PathVariable String tripId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestBody CreateLodgingPlanRequest request) {
-        request.setTripId(tripId);
-        Plan createdPlan = planService.createLodgingPlan(request);
-        return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        try {
+            request.setTripId(tripId);
+            Plan createdPlan = planService.createLodgingPlanWithAuth(request, userId);
+            return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
     }
     
     @PostMapping("/activity")
     public ResponseEntity<Plan> createActivityPlan(
             @PathVariable String tripId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestBody CreateActivityPlanRequest request) {
-        request.setTripId(tripId);
-        Plan createdPlan = planService.createActivityPlan(request);
-        return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        try {
+            request.setTripId(tripId);
+            Plan createdPlan = planService.createActivityPlanWithAuth(request, userId);
+            return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
     }
     
     @PostMapping("/boat")
     public ResponseEntity<Plan> createBoatPlan(
             @PathVariable String tripId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestBody CreateBoatPlanRequest request) {
-        request.setTripId(tripId);
-        Plan createdPlan = planService.createBoatPlan(request);
-        return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        try {
+            request.setTripId(tripId);
+            Plan createdPlan = planService.createBoatPlanWithAuth(request, userId);
+            return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
     }
     
     @PostMapping("/car-rental")
     public ResponseEntity<Plan> createCarRentalPlan(
             @PathVariable String tripId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestBody CreateCarRentalPlanRequest request) {
-        request.setTripId(tripId);
-        Plan createdPlan = planService.createCarRentalPlan(request);
-        return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        try {
+            request.setTripId(tripId);
+            Plan createdPlan = planService.createCarRentalPlanWithAuth(request, userId);
+            return new ResponseEntity<>(createdPlan, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
     }
 
     @GetMapping
@@ -89,16 +119,27 @@ public class PlanController {
     public ResponseEntity<Plan> updatePlan(
             @PathVariable String tripId,
             @PathVariable String planId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestBody CreatePlanRequest request) {
-        request.setTripId(tripId);
-        Plan updatedPlan = planService.updatePlan(planId, request);
-        return ResponseEntity.ok(updatedPlan);
+        try {
+            request.setTripId(tripId);
+            Plan updatedPlan = planService.updatePlanWithAuth(planId, request, userId);
+            return ResponseEntity.ok(updatedPlan);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
     }
 
     @DeleteMapping("/{planId}")
-    public ResponseEntity<Void> deletePlan(@PathVariable String planId) {
-        planService.deletePlan(planId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> deletePlan(
+            @PathVariable String planId,
+            @RequestHeader("X-User-Id") String userId) {
+        try {
+            planService.deletePlanWithAuth(planId, userId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
     
     @DeleteMapping("/{planId}/photos/{photoFileName}")

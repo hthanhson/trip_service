@@ -3,6 +3,7 @@ package com.datn.trip_service.controller;
 import com.datn.trip_service.dto.CreateTripRequest;
 import com.datn.trip_service.dto.TripResponse;
 import com.datn.trip_service.model.Trip;
+import com.datn.trip_service.model.User;
 import com.datn.trip_service.service.TripService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/trips")
@@ -72,6 +74,80 @@ public class TripController {
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+    
+    // Add member to trip
+    @PostMapping("/{tripId}/members")
+    public ResponseEntity<TripResponse> addMember(@PathVariable String tripId, @RequestBody User member) {
+        try {
+            Trip trip = tripService.addMember(tripId, member);
+            TripResponse response = new TripResponse(true, "Member added successfully", trip);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            TripResponse response = new TripResponse(false, e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+    
+    // Remove member from trip
+    @DeleteMapping("/{tripId}/members/{userId}")
+    public ResponseEntity<TripResponse> removeMember(@PathVariable String tripId, @PathVariable String userId) {
+        try {
+            Trip trip = tripService.removeMember(tripId, userId);
+            TripResponse response = new TripResponse(true, "Member removed successfully", trip);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            TripResponse response = new TripResponse(false, e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+    
+    // Update shared users list
+    @PutMapping("/{tripId}/shared-users")
+    public ResponseEntity<TripResponse> updateSharedUsers(
+            @PathVariable String tripId, 
+            @RequestBody Map<String, Object> request,
+            @RequestHeader("X-User-Id") String userId) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<String> sharedWithUserIds = (List<String>) request.get("sharedWithUserIds");
+            Trip trip = tripService.updateSharedUsers(tripId, sharedWithUserIds);
+            TripResponse response = new TripResponse(true, "Shared users updated successfully", trip);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            TripResponse response = new TripResponse(false, e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+    
+    // Check if user is member
+    @GetMapping("/{tripId}/members/{userId}/check")
+    public ResponseEntity<Map<String, Boolean>> checkMembership(
+            @PathVariable String tripId, 
+            @PathVariable String userId) {
+        try {
+            boolean isMember = tripService.isMember(tripId, userId);
+            return ResponseEntity.ok(Map.of("isMember", isMember));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+    
+    // Check if user can view trip
+    @PostMapping("/{tripId}/check-access")
+    public ResponseEntity<Map<String, Boolean>> checkAccess(
+            @PathVariable String tripId,
+            @RequestBody Map<String, Object> request) {
+        try {
+            String userId = (String) request.get("userId");
+            @SuppressWarnings("unchecked")
+            List<String> followerIds = (List<String>) request.get("followerIds");
+            
+            boolean canView = tripService.canViewTrip(tripId, userId, followerIds);
+            return ResponseEntity.ok(Map.of("canView", canView));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
 }
