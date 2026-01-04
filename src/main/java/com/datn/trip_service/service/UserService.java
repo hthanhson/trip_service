@@ -17,6 +17,33 @@ public class UserService {
     @Autowired
     private Firestore firestore;
 
+    public User getUserById(String userId) throws ExecutionException, InterruptedException {
+        try {
+            DocumentSnapshot userDoc = firestore.collection("users")
+                    .document(userId)
+                    .get()
+                    .get();
+            
+            if (userDoc.exists()) {
+                return User.builder()
+                        .id(userDoc.getId())
+                        .firstName(userDoc.getString("firstName"))
+                        .lastName(userDoc.getString("lastName"))
+                        .email(userDoc.getString("email"))
+                        .profilePicture(userDoc.getString("profilePicture"))
+                        .role(userDoc.getString("role"))
+                        .enabled(userDoc.getBoolean("enabled"))
+                        .build();
+            } else {
+                throw new RuntimeException("User not found with id: " + userId);
+            }
+        } catch (Exception e) {
+            System.err.println("Error in getUserById: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to get user: " + e.getMessage());
+        }
+    }
+
     public List<User> getFollowers(String userId) throws ExecutionException, InterruptedException {
         List<User> followers = new ArrayList<>();
         

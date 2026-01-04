@@ -44,6 +44,10 @@ public class TripService {
         return tripRepository.findByUserId(userId);
     }
 
+    public List<Trip> getTripsByMemberId(String userId) {
+        return tripRepository.findTripsByMemberId(userId);
+    }
+
     public Trip updateTrip(String id, CreateTripRequest request) {
         Trip trip = getTripById(id);
         

@@ -16,6 +16,20 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @GetMapping("/{userId}")
+    public ResponseEntity<User> getUserById(@PathVariable String userId) {
+        try {
+            User user = userService.getUserById(userId);
+            if (user != null) {
+                return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.status(404).body(null);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
     @GetMapping("/{userId}/followers")
     public ResponseEntity<List<User>> getFollowers(@PathVariable String userId) {
         try {

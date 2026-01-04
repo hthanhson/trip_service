@@ -314,6 +314,45 @@ public class TripRepository {
         }
     }
 
+    /**
+     * Find trips where user is a member (not the creator)
+     */
+    public List<Trip> findTripsByMemberId(String userId) {
+        try {
+            Firestore firestore = getFirestore();
+            // Get all trips and filter in memory to check members array
+            QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME)
+                    .get()
+                    .get();
+            
+            List<Trip> trips = new ArrayList<>();
+            for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                // Skip if user is the creator
+                String creatorId = document.getString("userId");
+                if (userId.equals(creatorId)) {
+                    continue;
+                }
+                
+                // Check if user is in members list
+                List<Map<String, Object>> membersList = (List<Map<String, Object>>) document.get("members");
+                if (membersList != null) {
+                    boolean isMember = membersList.stream()
+                            .anyMatch(member -> userId.equals(member.get("id")));
+                    
+                    if (isMember) {
+                        Trip trip = convertDocumentToTrip(document);
+                        if (trip != null) {
+                            trips.add(trip);
+                        }
+                    }
+                }
+            }
+            return trips;
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to find trips by member id", e);
+        }
+    }
+
     public void delete(Trip trip) {
         deleteById(trip.getId());
     }

@@ -55,6 +55,16 @@ public class TripController {
         }
     }
 
+    @GetMapping("/member/{userId}")
+    public ResponseEntity<List<Trip>> getTripsByMemberId(@PathVariable String userId) {
+        try {
+            List<Trip> trips = tripService.getTripsByMemberId(userId);
+            return ResponseEntity.ok(trips);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<TripResponse> updateTrip(@PathVariable String id, @RequestBody CreateTripRequest request) {
         try {
