@@ -33,8 +33,7 @@ public class NotificationScheduler {
     public void sendDailyTripNotification() {
         try {
             LocalDate today = LocalDate.now();
-            
-            // Step 1: Check if there are any active trips (ongoing)
+
             List<Trip> activeTrips = tripRepository.findActiveTrips(today);
             
             if (!activeTrips.isEmpty()) {
@@ -46,17 +45,15 @@ public class NotificationScheduler {
             }
             
             System.out.println(" No active trips. Checking for upcoming trips...");
-            
-            // Step 2: If no active trips, find upcoming trips
+
             List<Trip> upcomingTrips = tripRepository.findUpcomingTrips(today);
             
             if (upcomingTrips.isEmpty()) {
                 System.out.println("No trips in the future. No notification will be sent.");
                 return;
             }
-            
-            // Step 3: Send notification for the nearest upcoming trip
-            Trip nextTrip = upcomingTrips.get(0); // First one is the nearest (sorted by date)
+
+            Trip nextTrip = upcomingTrips.get(0);
             System.out.println("Sending notification for upcoming trip: " + nextTrip.getTitle() + " (starts " + nextTrip.getStartDate() + ")");
             sendUpcomingTripNotification(nextTrip);
             

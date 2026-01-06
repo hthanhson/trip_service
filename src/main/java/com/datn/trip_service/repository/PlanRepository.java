@@ -30,8 +30,7 @@ public class PlanRepository {
     private Firestore getFirestore() {
         return FirestoreClient.getFirestore();
     }
-    
-    // Helper method to parse LocalDateTime from Firestore (handles both Timestamp and String)
+
     private LocalDateTime parseLocalDateTime(Object value) {
         if (value == null) return null;
         
@@ -58,19 +57,16 @@ public class PlanRepository {
                 docRef = firestore.collection(COLLECTION_NAME).document();
                 plan.setId(docRef.getId());
             } else {
-                // Update existing document
                 docRef = firestore.collection(COLLECTION_NAME).document(plan.getId());
             }
-            
-            // Set created timestamp if new
+
             if (plan.getCreatedAt() == null) {
                 plan.setCreatedAt(LocalDateTime.now());
             }
             
             // Convert Plan to Map
             Map<String, Object> planData = convertPlanToMap(plan);
-            
-            // Use merge to preserve existing fields like likes and comments
+
             docRef.set(planData, SetOptions.merge()).get();
             return plan;
         } catch (InterruptedException | ExecutionException e) {
@@ -160,9 +156,7 @@ public class PlanRepository {
         if (plan.getCreatedAt() != null) {
             map.put("createdAt", plan.getCreatedAt().format(formatter));
         }
-        
-        // Add likes and comments to preserve them when updating
-        // Convert to Map to ensure proper serialization in Firestore
+
         if (plan.getLikes() != null && !plan.getLikes().isEmpty()) {
             List<Map<String, Object>> likesList = new ArrayList<>();
             for (PlanLike like : plan.getLikes()) {
