@@ -102,19 +102,18 @@ public class NotificationRepository {
 
     public void saveFcmToken(String userId, String fcmToken) throws ExecutionException, InterruptedException {
         Firestore firestore = getFirestore();
-
         Map<String, Object> deviceData = new HashMap<>();
         deviceData.put("userId", userId);
         deviceData.put("fcmToken", fcmToken);
         deviceData.put("notificationsEnabled", true);
         deviceData.put("lastUpdated", System.currentTimeMillis());
 
+
         ApiFuture<WriteResult> future = firestore.collection(COLLECTION_USER_DEVICE)
                 .document(userId)
                 .set(deviceData, SetOptions.merge());
 
-        future.get();
-        System.out.println("Saved FCM token for user: " + userId);
+        WriteResult result = future.get();
     }
 
     public Map<String, Object> getUserDevice(String userId) throws ExecutionException, InterruptedException {
@@ -138,9 +137,10 @@ public class NotificationRepository {
         updates.put("notificationsEnabled", enabled);
         updates.put("lastUpdated", System.currentTimeMillis());
 
+        // Use set() with merge option to create document if it doesn't exist
         ApiFuture<WriteResult> future = firestore.collection(COLLECTION_USER_DEVICE)
                 .document(userId)
-                .update(updates);
+                .set(updates, SetOptions.merge());
 
         future.get();
         System.out.println("Updated notification settings for user: " + userId);

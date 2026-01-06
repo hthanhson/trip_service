@@ -314,9 +314,7 @@ public class TripRepository {
         }
     }
 
-    /**
-     * Find trips where user is a member (not the creator)
-     */
+
     public List<Trip> findTripsByMemberId(String userId) {
         try {
             Firestore firestore = getFirestore();
@@ -397,10 +395,7 @@ public class TripRepository {
         }
     }
 
-    /**
-     * Find all active trips (trips that are currently ongoing)
-     * Active = startDate <= today <= endDate
-     */
+
     public List<Trip> findActiveTrips(LocalDate today) {
         try {
             Firestore firestore = getFirestore();
@@ -436,11 +431,92 @@ public class TripRepository {
         }
     }
 
-    /**
-     * Find upcoming trips (trips that will start in the future)
-     * Upcoming = startDate > today
-     * Sorted by startDate ascending (nearest first)
-     */
+    public List<Trip> findActiveTripsForUser(String userId, LocalDate today) {
+        try {
+            Firestore firestore = getFirestore();
+            
+            QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME)
+                    .whereEqualTo("userId", userId)
+                    .get()
+                    .get();
+            
+            List<Trip> activeTrips = new ArrayList<>();
+            String todayString = today.toString();
+            
+            for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                String startDateStr = document.getString("startDate");
+                String endDateStr = document.getString("endDate");
+                
+                if (startDateStr != null && endDateStr != null) {
+                    if (startDateStr.compareTo(todayString) <= 0 && endDateStr.compareTo(todayString) >= 0) {
+                        Trip trip = convertDocumentToTrip(document);
+                        if (trip != null) {
+                            activeTrips.add(trip);
+                        }
+                    }
+                }
+            }
+            
+            return activeTrips;
+            
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to find active trips for user", e);
+        }
+    }
+
+    public List<Trip> findUpcomingTripsForUser(String userId, LocalDate today) {
+        try {
+            Firestore firestore = getFirestore();
+            String todayString = today.toString();
+            
+            // Get all trips for this user, then filter in memory
+            // (avoids needing composite index on userId + startDate)
+            QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME)
+                    .whereEqualTo("userId", userId)
+                    .get()
+                    .get();
+            
+            List<Trip> upcomingTrips = new ArrayList<>();
+            for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                String startDateStr = document.getString("startDate");
+                
+                // Filter: startDate > today
+                if (startDateStr != null && startDateStr.compareTo(todayString) > 0) {
+                    Trip trip = convertDocumentToTrip(document);
+                    if (trip != null) {
+                        upcomingTrips.add(trip);
+                    }
+                }
+            }
+            
+            upcomingTrips.sort((t1, t2) -> t1.getStartDate().compareTo(t2.getStartDate()));
+            return upcomingTrips;
+            
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to find upcoming trips for user", e);
+        }
+    }
+
+    public List<String> getAllUserIds() {
+        try {
+            Firestore firestore = getFirestore();
+            
+            QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME)
+                    .get()
+                    .get();
+            
+            return querySnapshot.getDocuments().stream()
+                    .map(doc -> doc.getString("userId"))
+                    .filter(userId -> userId != null && !userId.isEmpty())
+                    .distinct()
+                    .collect(Collectors.toList());
+            
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to get all user IDs", e);
+        }
+    }
+
+
     public List<Trip> findUpcomingTrips(LocalDate today) {
         try {
             Firestore firestore = getFirestore();

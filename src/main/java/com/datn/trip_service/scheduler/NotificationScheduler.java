@@ -29,41 +29,50 @@ public class NotificationScheduler {
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    @Scheduled(cron = "0 15 12 * * ?", zone = "UTC")
+    @Scheduled(cron = "0 44 19 * * ?", zone = "UTC")
     public void sendDailyTripNotification() {
         try {
             LocalDate today = LocalDate.now();
 
-            List<Trip> activeTrips = tripRepository.findActiveTrips(today);
+            List<String> allUserIds = tripRepository.getAllUserIds();
+
+            int notificationsSent = 0;
             
-            if (!activeTrips.isEmpty()) {
-                System.out.println("⏸There are " + activeTrips.size() + " active trip(s). No notification will be sent.");
-                for (Trip trip : activeTrips) {
-                    System.out.println("  - Active: " + trip.getTitle() + " (" + trip.getStartDate() + " to " + trip.getEndDate() + ")");
+            for (String userId : allUserIds) {
+
+                List<Trip> activeTrips = tripRepository.findActiveTripsForUser(userId, today);
+                
+                if (!activeTrips.isEmpty()) {
+                    for (Trip trip : activeTrips) {
+                        System.out.println("  - Active: " + trip.getTitle() + " (" + trip.getStartDate() + " to " + trip.getEndDate() + ")");
+                    }
+                    continue;
                 }
-                return;
-            }
-            
-            System.out.println(" No active trips. Checking for upcoming trips...");
 
-            List<Trip> upcomingTrips = tripRepository.findUpcomingTrips(today);
-            
-            if (upcomingTrips.isEmpty()) {
-                System.out.println("No trips in the future. No notification will be sent.");
-                return;
+                // User has no active trips - check for upcoming trips
+                List<Trip> upcomingTrips = tripRepository.findUpcomingTripsForUser(userId, today);
+                
+                if (upcomingTrips.isEmpty()) {
+                    continue;
+                }
+                
+                // Has upcoming trip - send notification
+                Trip nextTrip = upcomingTrips.get(0);
+                System.out.println("  📤 Sending notification for upcoming trip: " + nextTrip.getTitle() + " (starts " + nextTrip.getStartDate() + ")");
+                String response = sendUpcomingTripNotification(userId, nextTrip);
+                
+                // Only count as sent if successful
+                if (response != null) {
+                    notificationsSent++;
+                }
             }
 
-            Trip nextTrip = upcomingTrips.get(0);
-            System.out.println("Sending notification for upcoming trip: " + nextTrip.getTitle() + " (starts " + nextTrip.getStartDate() + ")");
-            sendUpcomingTripNotification(nextTrip);
-            
         } catch (Exception e) {
-            System.err.println("Error in sendDailyTripNotification: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private void sendUpcomingTripNotification(Trip trip) {
+    private String sendUpcomingTripNotification(String userId, Trip trip) {
         try {
             String title = "Chuyến đi sắp diễn ra!";
             String body = String.format(
@@ -75,7 +84,7 @@ public class NotificationScheduler {
 
             // Prepare data payload
             Map<String, String> data = new HashMap<>();
-            data.put("type", "TRIP_REMINDER");
+            data.put("type", "TRIP");
             data.put("tripId", trip.getId());
             data.put("tripTitle", trip.getTitle());
             data.put("startDate", trip.getStartDate().toString());
@@ -86,20 +95,20 @@ public class NotificationScheduler {
                 data.put("coverPhoto", trip.getCoverPhoto());
             }
 
-            notificationService.sendTopicNotification(
-                    "trip-reminders",
-                    title,
-                    body,
-                    data
-            );
-
-
-            System.out.println("Sent notification for trip: " + trip.getTitle());
-
+            // Send notification to specific user
+            String response = notificationService.sendNotificationToUser(userId, title, body, data);
+            
+            if (response != null) {
+                System.out.println("  Notification sent successfully for trip: " + trip.getTitle());
+            } else {
+                System.out.println("  Failed to send notification for trip: " + trip.getTitle());
+            }
+            
+            return response;
 
         } catch (Exception e) {
-            System.err.println("Error sending trip notification: " + e.getMessage());
             e.printStackTrace();
+            return null;
         }
     }
 }
