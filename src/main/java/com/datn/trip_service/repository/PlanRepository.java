@@ -2,7 +2,14 @@ package com.datn.trip_service.repository;
 
 import com.datn.trip_service.model.Plan;
 import com.datn.trip_service.model.PlanType;
-import com.datn.trip_service.model.plan.*;
+import com.datn.trip_service.model.PlanLike;
+import com.datn.trip_service.model.PlanComment;
+import com.datn.trip_service.model.plan.ActivityPlan;
+import com.datn.trip_service.model.plan.BoatPlan;
+import com.datn.trip_service.model.plan.CarRentalPlan;
+import com.datn.trip_service.model.plan.FlightPlan;
+import com.datn.trip_service.model.plan.LodgingPlan;
+import com.datn.trip_service.model.plan.RestaurantPlan;
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
@@ -63,7 +70,8 @@ public class PlanRepository {
             // Convert Plan to Map
             Map<String, Object> planData = convertPlanToMap(plan);
             
-            docRef.set(planData).get();
+            // Use merge to preserve existing fields like likes and comments
+            docRef.set(planData, SetOptions.merge()).get();
             return plan;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Failed to save plan", e);
@@ -151,6 +159,57 @@ public class PlanRepository {
         
         if (plan.getCreatedAt() != null) {
             map.put("createdAt", plan.getCreatedAt().format(formatter));
+        }
+        
+        // Add likes and comments to preserve them when updating
+        // Convert to Map to ensure proper serialization in Firestore
+        if (plan.getLikes() != null && !plan.getLikes().isEmpty()) {
+            List<Map<String, Object>> likesList = new ArrayList<>();
+            for (PlanLike like : plan.getLikes()) {
+                Map<String, Object> likeMap = new HashMap<>();
+                if (like.getId() != null) {
+                    likeMap.put("id", like.getId());
+                }
+                if (like.getPlanId() != null) {
+                    likeMap.put("planId", like.getPlanId());
+                }
+                if (like.getUserId() != null) {
+                    likeMap.put("userId", like.getUserId());
+                }
+                if (like.getCreatedAt() != null) {
+                    likeMap.put("createdAt", like.getCreatedAt());
+                }
+                likesList.add(likeMap);
+            }
+            map.put("likes", likesList);
+        }
+        
+        if (plan.getComments() != null && !plan.getComments().isEmpty()) {
+            List<Map<String, Object>> commentsList = new ArrayList<>();
+            for (PlanComment comment : plan.getComments()) {
+                Map<String, Object> commentMap = new HashMap<>();
+                if (comment.getId() != null) {
+                    commentMap.put("id", comment.getId());
+                }
+                if (comment.getPlanId() != null) {
+                    commentMap.put("planId", comment.getPlanId());
+                }
+                if (comment.getUserId() != null) {
+                    commentMap.put("userId", comment.getUserId());
+                }
+
+                if (comment.getParentId() != null) {
+                    commentMap.put("parentId", comment.getParentId());
+                }
+                if (comment.getContent() != null) {
+                    commentMap.put("content", comment.getContent());
+                }
+                if (comment.getCreatedAt() != null) {
+                    commentMap.put("createdAt", comment.getCreatedAt());
+                }
+                commentsList.add(commentMap);
+            }
+            map.put("comments", commentsList);
         }
         
         // Add specific fields based on plan type
@@ -290,6 +349,65 @@ public class PlanRepository {
         plan.setType(planType);
         
         plan.setCreatedAt(parseLocalDateTime(document.get("createdAt")));
+        
+        // Load likes and comments from Firestore to preserve them
+        Object likesObj = document.get("likes");
+        if (likesObj instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> likesList = (List<Map<String, Object>>) likesObj;
+            List<PlanLike> likes = new ArrayList<>();
+            for (Map<String, Object> likeMap : likesList) {
+                PlanLike like = new PlanLike();
+                if (likeMap.get("id") != null) {
+                    like.setId(((Number) likeMap.get("id")).longValue());
+                }
+                // planId is String
+                like.setPlanId((String) likeMap.get("planId"));
+                like.setUserId((String) likeMap.get("userId"));
+                // createdAt is Timestamp
+                Object createdAtObj = likeMap.get("createdAt");
+                if (createdAtObj instanceof Timestamp) {
+                    like.setCreatedAt((Timestamp) createdAtObj);
+                } else if (createdAtObj instanceof Number) {
+                    // Convert from milliseconds to Timestamp
+                    long millis = ((Number) createdAtObj).longValue();
+                    like.setCreatedAt(Timestamp.ofTimeMicroseconds(millis * 1000));
+                }
+                likes.add(like);
+            }
+            plan.setLikes(likes);
+        }
+        
+        Object commentsObj = document.get("comments");
+        if (commentsObj instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> commentsList = (List<Map<String, Object>>) commentsObj;
+            List<PlanComment> comments = new ArrayList<>();
+            for (Map<String, Object> commentMap : commentsList) {
+                PlanComment comment = new PlanComment();
+                if (commentMap.get("id") != null) {
+                    comment.setId(((Number) commentMap.get("id")).longValue());
+                }
+                // planId, parentId are String
+                comment.setPlanId((String) commentMap.get("planId"));
+                comment.setUserId((String) commentMap.get("userId"));
+                comment.setUserName((String) commentMap.get("userName"));
+                comment.setUserAvatar((String) commentMap.get("userAvatar"));
+                comment.setParentId((String) commentMap.get("parentId"));
+                comment.setContent((String) commentMap.get("content"));
+                // createdAt is Timestamp
+                Object createdAtObj = commentMap.get("createdAt");
+                if (createdAtObj instanceof Timestamp) {
+                    comment.setCreatedAt((Timestamp) createdAtObj);
+                } else if (createdAtObj instanceof Number) {
+                    // Convert from milliseconds to Timestamp
+                    long millis = ((Number) createdAtObj).longValue();
+                    comment.setCreatedAt(Timestamp.ofTimeMicroseconds(millis * 1000));
+                }
+                comments.add(comment);
+            }
+            plan.setComments(comments);
+        }
         
         return plan;
     }
