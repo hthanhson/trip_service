@@ -58,7 +58,7 @@ public class NotificationScheduler {
                 
                 // Has upcoming trip - send notification
                 Trip nextTrip = upcomingTrips.get(0);
-                System.out.println("  📤 Sending notification for upcoming trip: " + nextTrip.getTitle() + " (starts " + nextTrip.getStartDate() + ")");
+                System.out.println(" Sending notification for upcoming trip: " + nextTrip.getTitle() + " (starts " + nextTrip.getStartDate() + ")");
                 String response = sendUpcomingTripNotification(userId, nextTrip);
                 
                 // Only count as sent if successful

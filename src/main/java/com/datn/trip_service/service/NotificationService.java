@@ -286,11 +286,11 @@ public class NotificationService {
             // Send the message with error handling for invalid tokens
             try {
                 String response = FirebaseMessaging.getInstance().send(message);
-                System.out.println("✅ Successfully sent FCM notification to user " + userId + ": " + response);
+                System.out.println(" Successfully sent FCM notification to user " + userId + ": " + response);
             } catch (com.google.firebase.messaging.FirebaseMessagingException e) {
                 // Check if error is due to invalid/unregistered token
                 if (e.getMessagingErrorCode() == com.google.firebase.messaging.MessagingErrorCode.UNREGISTERED) {
-                    System.err.println("⚠️ User " + userId + " has invalid/unregistered FCM token. Skipping notification send.");
+                    System.err.println(" User " + userId + " has invalid/unregistered FCM token. Skipping notification send.");
                     // Could delete the token from user_device here if needed
                     return null;
                 } else {
@@ -303,7 +303,7 @@ public class NotificationService {
             
             // Save notification to Firestore collection
             try {
-                com.datn.trip_service.model.Notification notificationRecord = new com.datn.trip_service.model.Notification();
+                Notification notificationRecord = new Notification();
                 notificationRecord.setId(String.valueOf(System.currentTimeMillis()));
                 notificationRecord.setUserId(userId);
                 notificationRecord.setTitle(title);
@@ -313,16 +313,16 @@ public class NotificationService {
                 notificationRecord.setIsRead(false);
                 
                 notificationRepository.saveNotification(notificationRecord);
-                System.out.println("✅ Notification saved to Firestore: " + title);
+                System.out.println(" Notification saved to Firestore: " + title);
             } catch (Exception e) {
-                System.err.println("⚠️ Failed to save notification to Firestore: " + e.getMessage());
-                // Don't fail the whole operation just because saving to Firestore failed
+                System.err.println("Failed to save notification to Firestore: " + e.getMessage());
+                
             }
             
             return userId;
 
         } catch (Exception e) {
-            System.err.println("❌ Error sending notification to user " + userId + ": " + e.getMessage());
+            System.err.println(" Error sending notification to user " + userId + ": " + e.getMessage());
             e.printStackTrace();
             return null;
         }
