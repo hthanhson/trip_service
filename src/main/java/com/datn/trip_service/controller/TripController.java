@@ -1,5 +1,6 @@
 package com.datn.trip_service.controller;
 
+import com.datn.trip_service.dto.AdventureResponse;
 import com.datn.trip_service.dto.CreateTripRequest;
 import com.datn.trip_service.dto.TripResponse;
 import com.datn.trip_service.model.Trip;
@@ -158,6 +159,26 @@ public class TripController {
             return ResponseEntity.ok(Map.of("canView", canView));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+    
+    /**
+     * Adventure endpoint - returns all trips with full details in 1 API call
+     * Replaces 11 separate calls (1 discover + 10 trip/user details)
+     * 
+     * Usage: GET /api/trips/adventure?userId=xxx&limit=10
+     */
+    @GetMapping("/adventure")
+    public ResponseEntity<AdventureResponse> getAdventureTrips(
+            @RequestParam(required = false) String userId,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            AdventureResponse response = tripService.getAdventureTrips(userId, limit);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error in getAdventureTrips endpoint: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }

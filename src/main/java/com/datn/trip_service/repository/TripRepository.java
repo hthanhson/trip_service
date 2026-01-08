@@ -548,4 +548,42 @@ public class TripRepository {
         }
     }
 
+    /**
+     * Get public trips for Adventure section
+     * Filters: isPublic = "public", excludes user's own trips
+     */
+    public List<Trip> findPublicTripsForAdventure(String excludeUserId, int limit) {
+        try {
+            Firestore firestore = getFirestore();
+            
+            // Query public trips
+            QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME)
+                    .whereEqualTo("isPublic", "public")
+                    .orderBy("sharedAt", Query.Direction.DESCENDING)
+                    .limit(limit)
+                    .get()
+                    .get();
+            
+            List<Trip> publicTrips = new ArrayList<>();
+            for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                // Exclude user's own trips
+                String tripUserId = document.getString("userId");
+                if (excludeUserId != null && excludeUserId.equals(tripUserId)) {
+                    continue;
+                }
+                
+                Trip trip = convertDocumentToTrip(document);
+                if (trip != null) {
+                    publicTrips.add(trip);
+                }
+            }
+            
+            System.out.println("Found " + publicTrips.size() + " public trip(s) for adventure");
+            return publicTrips;
+            
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to find public trips for adventure", e);
+        }
+    }
+
 }

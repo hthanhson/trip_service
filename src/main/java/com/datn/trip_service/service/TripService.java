@@ -1,5 +1,6 @@
 package com.datn.trip_service.service;
 
+import com.datn.trip_service.dto.AdventureResponse;
 import com.datn.trip_service.dto.CreateTripRequest;
 import com.datn.trip_service.model.Trip;
 import com.datn.trip_service.model.User;
@@ -7,8 +8,13 @@ import com.datn.trip_service.repository.TripRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 @Service
 public class TripService {
@@ -18,6 +24,9 @@ public class TripService {
     
     @Autowired
     private FileStorageService fileStorageService;
+    
+    @Autowired
+    private UserService userService;
 
     public Trip createTrip(CreateTripRequest request) {
         Trip trip = new Trip();
@@ -186,5 +195,103 @@ public class TripService {
         }
         
         return false;
+    }
+    
+    /**
+     * Get Adventure trips - optimized endpoint that returns all data in 1 call
+     * Replaces 11 separate API calls (1 discover + 10 trip/user details)
+     */
+    public AdventureResponse getAdventureTrips(String userId, int limit) {
+        try {
+            // 1. Get public trips (excluding user's own trips)
+            List<Trip> publicTrips = tripRepository.findPublicTripsForAdventure(userId, limit);
+            
+            // 2. Build adventure items with all details embedded
+            List<AdventureResponse.AdventureItem> items = publicTrips.stream()
+                .map(trip -> {
+                    try {
+                        // Get user details (trip owner)
+                        User tripOwner = getUserById(trip.getUserId());
+                        
+                        // Calculate duration
+                        int duration = (int) ChronoUnit.DAYS.between(trip.getStartDate(), trip.getEndDate()) + 1;
+                        
+                        // Format start date text (e.g., "January 2026")
+                        String monthName = trip.getStartDate().getMonth()
+                            .getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+                        int year = trip.getStartDate().getYear();
+                        String startDateText = monthName + " " + year;
+                        
+                        // Format duration text (e.g., "5 days")
+                        String durationText = duration + " days";
+                        
+                        // Build TripDetail
+                        AdventureResponse.TripDetail tripDetail = AdventureResponse.TripDetail.builder()
+                            .id(trip.getId())
+                            .userId(trip.getUserId())
+                            .title(trip.getTitle())
+                            .startDate(trip.getStartDate())
+                            .endDate(trip.getEndDate())
+                            .isPublic(trip.getIsPublic())
+                            .coverPhoto(trip.getCoverPhoto())
+                            .content(trip.getContent())
+                            .tags(trip.getTags())
+                            .plans(trip.getPlans())
+                            .members(trip.getMembers())
+                            .sharedWithUsers(trip.getSharedWithUsers())
+                            .createdAt(trip.getCreatedAt())
+                            .sharedAt(trip.getSharedAt())
+                            .build();
+                        
+                        // Build UserDetail
+                        AdventureResponse.UserDetail userDetail = AdventureResponse.UserDetail.builder()
+                            .id(tripOwner.getId())
+                            .firstName(tripOwner.getFirstName())
+                            .lastName(tripOwner.getLastName())
+                            .email(tripOwner.getEmail())
+                            .profilePicture(tripOwner.getProfilePicture())
+                            .role(tripOwner.getRole())
+                            .createdAt(tripOwner.getCreatedAt())
+                            .updatedAt(tripOwner.getUpdatedAt())
+                            .build();
+                        
+                        // Build AdventureItem
+                        return AdventureResponse.AdventureItem.builder()
+                            .tripId(trip.getId())
+                            .trip(tripDetail)
+                            .user(userDetail)
+                            .duration(duration)
+                            .startDateText(startDateText)
+                            .durationText(durationText)
+                            .build();
+                            
+                    } catch (Exception e) {
+                        System.err.println("Error processing trip " + trip.getId() + ": " + e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(item -> item != null)
+                .collect(Collectors.toList());
+            
+            return AdventureResponse.builder()
+                .items(items)
+                .build();
+                
+        } catch (Exception e) {
+            System.err.println("Error getting adventure trips: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to get adventure trips", e);
+        }
+    }
+    
+    /**
+     * Helper method to get user by ID
+     */
+    private User getUserById(String userId) {
+        try {
+            return userService.getUserById(userId);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get user: " + userId, e);
+        }
     }
 }
