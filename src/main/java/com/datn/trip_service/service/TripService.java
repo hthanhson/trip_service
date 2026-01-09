@@ -3,6 +3,7 @@ package com.datn.trip_service.service;
 import com.datn.trip_service.dto.AdventureResponse;
 import com.datn.trip_service.dto.CreateTripRequest;
 import com.datn.trip_service.model.Plan;
+import com.datn.trip_service.model.PlanComment;
 import com.datn.trip_service.model.Trip;
 import com.datn.trip_service.model.User;
 import com.datn.trip_service.repository.PlanRepository;
@@ -54,11 +55,7 @@ public class TripService {
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + id));
     }
     
-    /**
-     * Get trip with full plan details - optimized for UI
-     * Returns trip WITH all complete plan information embedded
-     * This prevents the need to make separate API calls for each plan
-     */
+
     public Trip getTripWithFullPlans(String id) {
         Trip trip = tripRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + id));
@@ -80,12 +77,9 @@ public class TripService {
         
         return trip;
     }
-    
-    /**
-     * Populate userName and userAvatar for comments
-     */
-    private void populateCommentUserInfo(List<com.datn.trip_service.model.PlanComment> comments) {
-        for (com.datn.trip_service.model.PlanComment comment : comments) {
+
+    private void populateCommentUserInfo(List<PlanComment> comments) {
+        for (PlanComment comment : comments) {
             if (comment.getUserId() != null) {
                 try {
                     User user = userService.getUserById(comment.getUserId());
@@ -249,10 +243,7 @@ public class TripService {
         return false;
     }
     
-    /**
-     * Get Adventure trips - optimized endpoint that returns all data in 1 call
-     * Replaces 11 separate API calls (1 discover + 10 trip/user details)
-     */
+
     public AdventureResponse getAdventureTrips(String userId, int limit) {
         try {
             // 1. Get public trips (excluding user's own trips)
