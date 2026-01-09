@@ -45,6 +45,25 @@ public class TripController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
     }
+    
+    /**
+     * Get trip with full plan details - optimized endpoint
+     * Returns trip details WITH all complete plan information in 1 API call
+     * This prevents the need to call individual plan detail APIs for each plan
+     * 
+     * Usage: GET /api/trips/{id}/with-plans
+     */
+    @GetMapping("/{id}/with-plans")
+    public ResponseEntity<TripResponse> getTripWithFullPlans(@PathVariable String id) {
+        try {
+            Trip trip = tripService.getTripWithFullPlans(id);
+            TripResponse response = new TripResponse(true, "Trip with plans retrieved successfully", trip);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            TripResponse response = new TripResponse(false, e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+    }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Trip>> getTripsByUserId(@PathVariable String userId) {

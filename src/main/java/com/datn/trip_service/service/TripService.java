@@ -2,8 +2,10 @@ package com.datn.trip_service.service;
 
 import com.datn.trip_service.dto.AdventureResponse;
 import com.datn.trip_service.dto.CreateTripRequest;
+import com.datn.trip_service.model.Plan;
 import com.datn.trip_service.model.Trip;
 import com.datn.trip_service.model.User;
+import com.datn.trip_service.repository.PlanRepository;
 import com.datn.trip_service.repository.TripRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,9 @@ public class TripService {
 
     @Autowired
     private TripRepository tripRepository;
+    
+    @Autowired
+    private PlanRepository planRepository;
     
     @Autowired
     private FileStorageService fileStorageService;
@@ -47,6 +52,28 @@ public class TripService {
     public Trip getTripById(String id) {
         return tripRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + id));
+    }
+    
+    /**
+     * Get trip with full plan details - optimized for UI
+     * Returns trip WITH all complete plan information embedded
+     * This prevents the need to make separate API calls for each plan
+     */
+    public Trip getTripWithFullPlans(String id) {
+        Trip trip = tripRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + id));
+        
+        // Load all plans for this trip with full details
+        List<Plan> plans = planRepository.findByTripId(id);
+        
+        // Set plans to trip
+        if (plans != null && !plans.isEmpty()) {
+            trip.setPlans(plans);
+        } else {
+            trip.setPlans(new ArrayList<>());
+        }
+        
+        return trip;
     }
 
     public List<Trip> getTripsByUserId(String userId) {
