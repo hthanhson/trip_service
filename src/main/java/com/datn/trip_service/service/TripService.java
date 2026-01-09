@@ -66,14 +66,39 @@ public class TripService {
         // Load all plans for this trip with full details
         List<Plan> plans = planRepository.findByTripId(id);
         
-        // Set plans to trip
+        // Populate user info for comments in each plan
         if (plans != null && !plans.isEmpty()) {
+            for (Plan plan : plans) {
+                if (plan.getComments() != null && !plan.getComments().isEmpty()) {
+                    populateCommentUserInfo(plan.getComments());
+                }
+            }
             trip.setPlans(plans);
         } else {
             trip.setPlans(new ArrayList<>());
         }
         
         return trip;
+    }
+    
+    /**
+     * Populate userName and userAvatar for comments
+     */
+    private void populateCommentUserInfo(List<com.datn.trip_service.model.PlanComment> comments) {
+        for (com.datn.trip_service.model.PlanComment comment : comments) {
+            if (comment.getUserId() != null) {
+                try {
+                    User user = userService.getUserById(comment.getUserId());
+                    if (user != null) {
+                        comment.setUserName(user.getFirstName() + " " + user.getLastName());
+                        comment.setUserAvatar(user.getProfilePicture());
+                    }
+                } catch (Exception e) {
+                    // Log but don't fail - just leave userName/userAvatar as null
+                    System.err.println("Failed to get user info for comment userId: " + comment.getUserId());
+                }
+            }
+        }
     }
 
     public List<Trip> getTripsByUserId(String userId) {
