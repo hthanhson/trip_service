@@ -29,7 +29,7 @@ public class NotificationScheduler {
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    @Scheduled(cron = "0 19 6 * * ?", zone = "UTC")
+    @Scheduled(cron = "0 23 6 * * ?", zone = "UTC")
     public void sendDailyTripNotification() {
         try {
             LocalDate today = LocalDate.now();
